@@ -136,16 +136,16 @@ export const PriceAlertsModal = ({
             <Label className="font-semibold">Add New Alert</Label>
           </div>
           
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
+            <div className="space-y-2 w-full sm:w-[40%] min-w-[200px]">
               <Label>Type</Label>
-              <div className="flex space-x-2">
+              <div className="flex flex-row space-x-2 min-w-[180px]">
                 <Button
                   type="button"
                   variant={newAlertType === 'upper' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setNewAlertType('upper')}
-                  className="flex-1"
+                  className="flex-1 min-w-[80px]"
                 >
                   <TrendingUp className="w-3 h-3 mr-1" />
                   Upper
@@ -155,15 +155,15 @@ export const PriceAlertsModal = ({
                   variant={newAlertType === 'lower' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setNewAlertType('lower')}
-                  className="flex-1"
+                  className="flex-1 min-w-[80px]"
                 >
                   <TrendingDown className="w-3 h-3 mr-1" />
                   Lower
                 </Button>
               </div>
             </div>
-            
-            <div className="space-y-2">
+
+            <div className="space-y-2 w-full sm:w-[30%]">
               <Label>Threshold ($)</Label>
               <Input
                 type="number"
@@ -178,9 +178,9 @@ export const PriceAlertsModal = ({
                 className={error ? 'border-danger' : ''}
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label>&nbsp;</Label>
+
+            <div className="space-y-2 w-full sm:w-[30%] flex flex-col justify-end">
+              <Label className="hidden sm:block">&nbsp;</Label>
               <Button 
                 onClick={handleAddAlert} 
                 className="w-full"
