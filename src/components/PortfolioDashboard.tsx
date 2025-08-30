@@ -10,47 +10,24 @@ import { Stock } from "../types/portfolio";
 import { PriceAlert, AlertNotification } from "../types/alerts";
 import { useToast } from "@/hooks/use-toast";
 
-const MOCK_STOCKS: Stock[] = [
-  {
-    id: "1",
-    symbol: "AAPL",
-    name: "Apple Inc.",
-    shares: 50,
-    purchasePrice: 150.00,
-    currentPrice: 175.50,
-    purchaseDate: "2024-01-15"
-  },
-  {
-    id: "2",
-    symbol: "GOOGL",
-    name: "Alphabet Inc.",
-    shares: 25,
-    purchasePrice: 2800.00,
-    currentPrice: 2950.75,
-    purchaseDate: "2024-02-10"
-  },
-  {
-    id: "3",
-    symbol: "TSLA",
-    name: "Tesla Inc.",
-    shares: 30,
-    purchasePrice: 220.00,
-    currentPrice: 195.25,
-    purchaseDate: "2024-03-05"
-  },
-  {
-    id: "4",
-    symbol: "MSFT",
-    name: "Microsoft Corporation",
-    shares: 40,
-    purchasePrice: 320.00,
-    currentPrice: 385.40,
-    purchaseDate: "2024-01-20"
-  }
-];
 
-export const PortfolioDashboard = () => {
-  const [stocks, setStocks] = useState<Stock[]>(MOCK_STOCKS);
+export function PortfolioDashboard() {
+  const [stocks, setStocks] = useState<Stock[]>([]);
+  // Fetch real stocks from backend on mount
+  useEffect(() => {
+    const fetchStocks = async () => {
+      try {
+        const res = await fetch('/api/stocks');
+        if (!res.ok) throw new Error('Failed to fetch stocks');
+        const data = await res.json();
+        setStocks(data);
+      } catch (e) {
+        // Optionally show a toast or alert
+        console.error('Failed to fetch stocks', e);
+      }
+    };
+    fetchStocks();
+  }, []);
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
   const [notifications, setNotifications] = useState<AlertNotification[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -195,6 +172,24 @@ export const PortfolioDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="flex justify-end mb-4">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/stocks');
+                    if (!res.ok) throw new Error('Failed to update prices');
+                    const data = await res.json();
+                    setStocks(data);
+                  } catch (e) {
+                    // Optionally show a toast or alert
+                    alert('Failed to update prices.');
+                  }
+                }}
+              >
+                Update Prices
+              </Button>
+            </div>
             <StockTable 
               stocks={stocks} 
               onUpdateStock={updateStock}
@@ -214,4 +209,4 @@ export const PortfolioDashboard = () => {
       />
     </div>
   );
-};
+}

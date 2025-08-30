@@ -1,0 +1,30 @@
+// Prisma schema for folio-guide
+// Defines Stock, PriceAlert, and User (optional for extensibility)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Stock {
+  id          String      @id @default(cuid())
+  symbol      String      @unique
+  name        String
+  currentPrice Float
+  alerts      PriceAlert[]
+  updatedAt   DateTime    @updatedAt
+}
+
+model PriceAlert {
+  id        String   @id @default(cuid())
+  stock     Stock    @relation(fields: [stockId], references: [id])
+  stockId   String
+  type      String   // 'upper' or 'lower'
+  threshold Float
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
