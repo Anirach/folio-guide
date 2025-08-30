@@ -11,12 +11,15 @@ datasource db {
 }
 
 model Stock {
-  id          String      @id @default(cuid())
-  symbol      String      @unique
-  name        String
-  currentPrice Float
-  alerts      PriceAlert[]
-  updatedAt   DateTime    @updatedAt
+  id            String      @id @default(cuid())
+  symbol        String      @unique
+  name          String
+  shares        Float
+  purchasePrice Float
+  currentPrice  Float
+  purchaseDate  DateTime
+  alerts        PriceAlert[]
+  updatedAt     DateTime    @updatedAt
 }
 
 model PriceAlert {

@@ -85,12 +85,19 @@ export function PortfolioDashboard() {
     return () => clearInterval(interval);
   }, [stocks, alerts, toast]);
 
-  const addStock = (newStock: Omit<Stock, 'id'>) => {
-    const stock: Stock = {
-      ...newStock,
-      id: Date.now().toString(),
-    };
-    setStocks([...stocks, stock]);
+  const addStock = async (newStock: Omit<Stock, 'id'>) => {
+    try {
+      const res = await fetch('/api/stocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newStock),
+      });
+      if (!res.ok) throw new Error('Failed to add stock');
+      const createdStock = await res.json();
+      setStocks(prev => [...prev, createdStock]);
+    } catch (e) {
+      toast({ title: 'Error', description: 'Failed to add stock', variant: 'destructive' });
+    }
   };
 
   const updateStock = (updatedStock: Stock) => {

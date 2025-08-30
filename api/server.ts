@@ -57,16 +57,24 @@ app.get('/api/stocks', async (req, res) => {
 
 // Add a new stock
 app.post('/api/stocks', async (req, res) => {
-  const { symbol, name } = req.body;
-  // Fetch price from Yahoo Finance
+  const { symbol, name, shares, purchasePrice, currentPrice, purchaseDate } = req.body;
+  if (!symbol || !name || !shares || !purchasePrice || !currentPrice || !purchaseDate) {
+    return res.status(400).json({ error: 'Missing required stock fields.' });
+  }
   try {
-    const price = await fetchYahooPrice(symbol);
     const stock = await prisma.stock.create({
-      data: { symbol, name, currentPrice: price }
+      data: {
+        symbol: symbol.toUpperCase(),
+        name,
+        shares: Number(shares),
+        purchasePrice: Number(purchasePrice),
+        currentPrice: Number(currentPrice),
+        purchaseDate: new Date(purchaseDate)
+      }
     });
     res.json(stock);
   } catch (e) {
-    res.status(400).json({ error: 'Could not fetch price or create stock.' });
+    res.status(400).json({ error: 'Could not create stock.', details: e instanceof Error ? e.message : e });
   }
 });
 
