@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, TrendingUp, TrendingDown, DollarSign, PieChart } from "lucide-react";
 import { PortfolioSummary } from "./PortfolioSummary";
 import { StockTable } from "./StockTable";
 import { AddStockModal } from "./AddStockModal";
+import { AlertNotifications } from "./AlertNotifications";
 import { Stock } from "../types/portfolio";
+import { PriceAlert, AlertNotification } from "../types/alerts";
+import { useToast } from "@/hooks/use-toast";
 
 const MOCK_STOCKS: Stock[] = [
   {
@@ -48,7 +51,62 @@ const MOCK_STOCKS: Stock[] = [
 
 export const PortfolioDashboard = () => {
   const [stocks, setStocks] = useState<Stock[]>(MOCK_STOCKS);
+  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
+  const [notifications, setNotifications] = useState<AlertNotification[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const { toast } = useToast();
+
+  // Mock price checking effect (simulates real-time price monitoring)
+  useEffect(() => {
+    const checkAlerts = () => {
+      const activeAlerts = alerts.filter(alert => alert.isActive);
+      const currentStock = stocks.find(stock => 
+        activeAlerts.some(alert => alert.stockId === stock.id)
+      );
+
+      activeAlerts.forEach(alert => {
+        const stock = stocks.find(s => s.id === alert.stockId);
+        if (!stock) return;
+
+        const shouldTrigger = 
+          (alert.type === 'upper' && stock.currentPrice >= alert.threshold) ||
+          (alert.type === 'lower' && stock.currentPrice <= alert.threshold);
+
+        if (shouldTrigger && !alert.triggeredAt) {
+          const notification: AlertNotification = {
+            id: Date.now().toString() + Math.random(),
+            alertId: alert.id,
+            stockSymbol: stock.symbol,
+            message: `${stock.symbol} has ${alert.type === 'upper' ? 'exceeded' : 'dropped below'} your ${alert.type} threshold`,
+            type: alert.type,
+            currentPrice: stock.currentPrice,
+            threshold: alert.threshold,
+            timestamp: new Date().toISOString(),
+            isRead: false
+          };
+
+          setNotifications(prev => [notification, ...prev]);
+          
+          // Mark alert as triggered
+          setAlerts(prev => prev.map(a => 
+            a.id === alert.id 
+              ? { ...a, triggeredAt: new Date().toISOString() }
+              : a
+          ));
+
+          // Show toast notification
+          toast({
+            title: "Price Alert Triggered!",
+            description: `${stock.symbol} is now $${stock.currentPrice.toFixed(2)} (${alert.type} threshold: $${alert.threshold.toFixed(2)})`,
+            duration: 5000,
+          });
+        }
+      });
+    };
+
+    const interval = setInterval(checkAlerts, 5000); // Check every 5 seconds
+    return () => clearInterval(interval);
+  }, [stocks, alerts, toast]);
 
   const addStock = (newStock: Omit<Stock, 'id'>) => {
     const stock: Stock = {
@@ -65,7 +123,28 @@ export const PortfolioDashboard = () => {
   };
 
   const deleteStock = (stockId: string) => {
+    // Also remove alerts for this stock
+    setAlerts(alerts.filter(alert => alert.stockId !== stockId));
     setStocks(stocks.filter(stock => stock.id !== stockId));
+  };
+
+  const markNotificationAsRead = (notificationId: string) => {
+    setNotifications(prev => prev.map(notification =>
+      notification.id === notificationId
+        ? { ...notification, isRead: true }
+        : notification
+    ));
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications(prev => prev.map(notification => ({
+      ...notification,
+      isRead: true
+    })));
+  };
+
+  const deleteNotification = (notificationId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
   };
 
   return (
@@ -83,13 +162,21 @@ export const PortfolioDashboard = () => {
                 <p className="text-sm text-muted-foreground">Manage your investments</p>
               </div>
             </div>
-            <Button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 transition-all duration-300"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Stock
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button 
+                onClick={() => setShowAddModal(true)}
+                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 transition-all duration-300"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Stock
+              </Button>
+              <AlertNotifications
+                notifications={notifications}
+                onMarkAsRead={markNotificationAsRead}
+                onMarkAllAsRead={markAllNotificationsAsRead}
+                onDeleteNotification={deleteNotification}
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -112,6 +199,8 @@ export const PortfolioDashboard = () => {
               stocks={stocks} 
               onUpdateStock={updateStock}
               onDeleteStock={deleteStock}
+              alerts={alerts}
+              onUpdateAlerts={setAlerts}
             />
           </CardContent>
         </Card>

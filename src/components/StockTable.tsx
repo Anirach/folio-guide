@@ -15,7 +15,9 @@ import {
   Trash2, 
   TrendingUp, 
   TrendingDown,
-  ArrowUpDown
+  ArrowUpDown,
+  Bell,
+  BellOff
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,19 +26,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Stock } from "../types/portfolio";
+import { PriceAlert } from "../types/alerts";
 import { EditStockModal } from "./EditStockModal";
+import { PriceAlertsModal } from "./PriceAlertsModal";
 
 interface StockTableProps {
   stocks: Stock[];
   onUpdateStock: (stock: Stock) => void;
   onDeleteStock: (stockId: string) => void;
+  alerts: PriceAlert[];
+  onUpdateAlerts: (alerts: PriceAlert[]) => void;
 }
 
 type SortField = 'symbol' | 'shares' | 'purchasePrice' | 'currentPrice' | 'gainLoss' | 'gainLossPercent';
 type SortDirection = 'asc' | 'desc';
 
-export const StockTable = ({ stocks, onUpdateStock, onDeleteStock }: StockTableProps) => {
+export const StockTable = ({ stocks, onUpdateStock, onDeleteStock, alerts, onUpdateAlerts }: StockTableProps) => {
   const [editingStock, setEditingStock] = useState<Stock | null>(null);
+  const [alertStock, setAlertStock] = useState<Stock | null>(null);
   const [sortField, setSortField] = useState<SortField>('symbol');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -62,6 +69,10 @@ export const StockTable = ({ stocks, onUpdateStock, onDeleteStock }: StockTableP
     const invested = stock.shares * stock.purchasePrice;
     const gainLoss = calculateGainLoss(stock);
     return invested > 0 ? (gainLoss / invested) * 100 : 0;
+  };
+
+  const getStockAlertCount = (stockId: string) => {
+    return alerts.filter(alert => alert.stockId === stockId && alert.isActive).length;
   };
 
   const handleSort = (field: SortField) => {
@@ -154,6 +165,7 @@ export const StockTable = ({ stocks, onUpdateStock, onDeleteStock }: StockTableP
               <TableHead className="text-right">
                 <SortButton field="gainLossPercent">Return %</SortButton>
               </TableHead>
+              <TableHead className="text-center">Alerts</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -200,6 +212,28 @@ export const StockTable = ({ stocks, onUpdateStock, onDeleteStock }: StockTableP
                       {formatPercentage(gainLossPercent)}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAlertStock(stock)}
+                      className="relative"
+                    >
+                      {getStockAlertCount(stock.id) > 0 ? (
+                        <>
+                          <Bell className="h-4 w-4 text-primary" />
+                          <Badge 
+                            variant="secondary" 
+                            className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs"
+                          >
+                            {getStockAlertCount(stock.id)}
+                          </Badge>
+                        </>
+                      ) : (
+                        <BellOff className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -208,6 +242,10 @@ export const StockTable = ({ stocks, onUpdateStock, onDeleteStock }: StockTableP
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setAlertStock(stock)}>
+                          <Bell className="mr-2 h-4 w-4" />
+                          Price Alerts
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setEditingStock(stock)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
@@ -235,6 +273,16 @@ export const StockTable = ({ stocks, onUpdateStock, onDeleteStock }: StockTableP
           isOpen={true}
           onClose={() => setEditingStock(null)}
           onUpdateStock={onUpdateStock}
+        />
+      )}
+
+      {alertStock && (
+        <PriceAlertsModal
+          stock={alertStock}
+          isOpen={true}
+          onClose={() => setAlertStock(null)}
+          alerts={alerts}
+          onUpdateAlerts={onUpdateAlerts}
         />
       )}
     </>
