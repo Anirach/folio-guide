@@ -8,11 +8,12 @@ cron.schedule('* * * * *', async () => {
     await Promise.all(stocks.map(async (stock) => {
       try {
         const price = await fetchYahooPrice(stock.symbol);
+        console.log(`[CRON DEBUG] Yahoo price for ${stock.symbol}:`, price);
         if (price && price !== stock.currentPrice) {
           await prisma.stock.update({ where: { id: stock.id }, data: { currentPrice: price } });
         }
       } catch (e) {
-        // Ignore errors for individual stocks
+        console.error(`[CRON ERROR] Failed to fetch price for ${stock.symbol}:`, e);
       }
     }));
     console.log(`[CRON] Updated stock prices at ${new Date().toISOString()}`);
@@ -21,7 +22,7 @@ cron.schedule('* * * * *', async () => {
   }
 });
 import { PrismaClient } from '@prisma/client';
-import axios from 'axios';
+import yahooFinance from 'yahoo-finance2';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -37,18 +38,20 @@ app.get('/api/stocks', async (req, res) => {
     const updatedStocks = await Promise.all(stocks.map(async (stock) => {
       try {
         const price = await fetchYahooPrice(stock.symbol);
+        console.log(`[DEBUG] Yahoo price for ${stock.symbol}:`, price);
         if (price && price !== stock.currentPrice) {
-          // Update DB if price changed
           await prisma.stock.update({ where: { id: stock.id }, data: { currentPrice: price } });
           return { ...stock, currentPrice: price };
         }
-        return stock;
+        return { ...stock, currentPrice: price ?? stock.currentPrice };
       } catch (err) {
         console.error(`[ERROR] Failed to fetch price for ${stock.symbol}:`, err);
         return stock; // fallback to old price if Yahoo fails
       }
     }));
-    res.json(updatedStocks);
+    // Always return the latest from DB after update
+    const latestStocks = await prisma.stock.findMany({ include: { alerts: true } });
+    res.json(latestStocks);
   } catch (err) {
     console.error('[ERROR] /api/stocks failed:', err);
     res.status(500).json({ error: 'Internal Server Error', details: err instanceof Error ? err.message : err });
@@ -83,6 +86,9 @@ app.post('/api/stocks/:symbol/update', async (req, res) => {
   const { symbol } = req.params;
   try {
     const price = await fetchYahooPrice(symbol);
+    if (price === null) {
+      return res.status(400).json({ error: 'Could not fetch price from Yahoo.' });
+    }
     const stock = await prisma.stock.update({
       where: { symbol },
       data: { currentPrice: price }
@@ -117,14 +123,22 @@ app.post('/api/stocks/:symbol/alerts', async (req, res) => {
   res.json(alert);
 });
 
-// Helper: Fetch price from Yahoo Finance
-async function fetchYahooPrice(symbol: string): Promise<number> {
-  // Yahoo Finance API (unofficial, public endpoint)
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
-  const resp = await axios.get(url);
-  const price = resp.data.quoteResponse.result[0]?.regularMarketPrice;
-  if (!price) throw new Error('No price found');
-  return price;
+// Helper: Fetch price from Yahoo Finance using yahoo-finance2
+async function fetchYahooPrice(symbol: string): Promise<number | null> {
+  try {
+    const quote = await yahooFinance.quote(symbol);
+    const price = quote?.regularMarketPrice;
+    if (price !== undefined) {
+      console.log(`[DEBUG] Yahoo price for ${symbol}: ${price}`);
+      return price;
+    } else {
+      console.error(`[ERROR] No price found for ${symbol}`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`[YAHOO ERROR] Failed to fetch price for ${symbol}:`, error);
+    return null;
+  }
 }
 
 const PORT = process.env.PORT || 4000;
