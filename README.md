@@ -1,73 +1,113 @@
-# Welcome to your Lovable project
 
-## Project info
+# Folio Guide
 
-**URL**: https://lovable.dev/projects/35408b33-635e-499d-9b5d-2db4f96bf422
+A full-stack stock portfolio tracker with real-time price updates, price alerts, and a modern UI.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- Track your stock portfolio and see real-time prices
+- Set upper/lower price alerts for each stock
+- Add, edit, and remove stocks
+- Modern UI with React, Vite, Tailwind CSS, and shadcn-ui
+- Node.js/Express backend with Prisma ORM and SQLite
+- Yahoo Finance integration for live prices
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/35408b33-635e-499d-9b5d-2db4f96bf422) and start prompting.
+## Getting Started (Local Development)
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
+- Node.js (v18+ recommended)
+- npm (v9+ recommended)
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
+### 1. Clone the repository
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+cd folio-guide
 ```
 
-**Edit a file directly in GitHub**
+### 2. Install dependencies
+```sh
+# Install frontend dependencies
+npm install
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+# Install backend dependencies
+cd api
+npm install
+cd ..
+```
 
-**Use GitHub Codespaces**
+### 3. Setup the database
+```sh
+cd api
+npx prisma migrate dev --name init
+npx prisma generate
+cd ..
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 4. Run the backend
+```sh
+cd api
+npm run dev
+# Backend runs on http://localhost:4000
+```
 
-## What technologies are used for this project?
+### 5. Run the frontend
+```sh
+# In a new terminal, from the project root
+npm run dev
+# Frontend runs on http://localhost:5173
+```
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Using Docker Compose
 
-## How can I deploy this project?
+You can run the entire stack (frontend, backend, and SQLite DB) with Docker Compose:
 
-Simply open [Lovable](https://lovable.dev/projects/35408b33-635e-499d-9b5d-2db4f96bf422) and click on Share -> Publish.
+```sh
+docker-compose up --build
+```
 
-## Can I connect a custom domain to my Lovable project?
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:4000
+- SQLite DB: persisted in ./api/dev.db
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Project Structure
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- `/src` - Frontend React app (Vite, TypeScript, shadcn-ui)
+- `/api` - Backend Node.js/Express API (Prisma ORM, SQLite)
+- `/docker-compose.yml` - Multi-service dev environment
+
+---
+
+## Deployment
+
+For production, use a real database (e.g., Postgres) and build static frontend assets. Example steps:
+
+1. Build frontend: `npm run build`
+2. Serve static files with a production server (e.g., Nginx, Vercel, Netlify)
+3. Deploy backend with a production database
+4. Set environment variables as needed
+
+---
+
+## Environment Variables
+
+- `DATABASE_URL` (backend): Path or connection string for Prisma/SQLite
+- `VITE_API_URL` (frontend): URL of the backend API
+
+---
+
+## Technologies Used
+
+- React, Vite, TypeScript, Tailwind CSS, shadcn-ui (frontend)
+- Node.js, Express, Prisma ORM, SQLite, yahoo-finance2 (backend)
+
+---
+
+## License
+
+MIT
